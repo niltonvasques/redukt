@@ -36,11 +36,11 @@ class Redukt<T>(state: T) {
             val middlewares = middlewares.toSet()
             val oldState = state
             var tempState = state
-            middlewares.parallelFor { it.before(tempState, action) }
+            Thread { middlewares.parallelFor { it.before(tempState, action) } }.start()
             reducers.forEach { tempState = it.reduce(tempState, action) }
             state = tempState
             listeners.parallelFor { notifyListeners(it, oldState) }
-            middlewares.parallelFor { it.after(tempState, action) }
+            Thread { middlewares.parallelFor { it.after(state, action) } }.start()
         }
         if (traceActionProfile) println("[Redukt] [$elapsed ms] Action ${action.name}")
     }
