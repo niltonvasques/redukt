@@ -31,18 +31,33 @@ class Redukt<T>(state: T) {
     }
 
     private fun reduce(action: Action<*>) {
+        var elapsedBefore = 0L
+        var elapsedAfter = 0L
+        var elapsedListeners = 0L
+        var elapsedReducer = 0L
         val elapsed = measureTimeMillis {
             val listeners = listeners.toSet() //to avoid concurrent modification exception
             val middlewares = middlewares.toSet()
             val oldState = state
             var tempState = state
-            Thread { middlewares.parallelFor { it.before(tempState, action) } }.start()
-            reducers.forEach { tempState = it.reduce(tempState, action) }
-            state = tempState
-            listeners.parallelFor { notifyListeners(it, oldState) }
-            Thread { middlewares.parallelFor { it.after(state, action) } }.start()
+            elapsedBefore = measureTimeMillis {
+                middlewares.parallelFor { it.before(tempState, action) }
+            }
+            elapsedReducer = measureTimeMillis {
+                reducers.forEach { tempState = it.reduce(tempState, action) }
+                state = tempState
+            }
+            elapsedListeners = measureTimeMillis {
+                listeners.parallelFor { notifyListeners(it, oldState) }
+            }
+            elapsedAfter = measureTimeMillis {
+                middlewares.parallelFor { it.after(tempState, action) }
+            }
         }
-        if (traceActionProfile) println("[Redukt] [$elapsed ms] Action ${action.name}")
+        val sum = elapsedBefore + elapsedReducer + elapsedListeners + elapsedAfter
+        if (traceActionProfile) println("[Redukt] [$elapsed ms][${sum} ms]" +
+                "[$elapsedBefore ms before][$elapsedReducer ms reducer]" +
+                "[$elapsedListeners ms listeners][$elapsedAfter ms after] Action ${action.name}")
     }
 
     private fun notifyListeners(it: StateListener<T>, oldState: T) {
