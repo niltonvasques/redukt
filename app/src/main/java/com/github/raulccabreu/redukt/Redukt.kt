@@ -55,9 +55,9 @@ class Redukt<T>(state: T) {
             }
         }
         val sum = elapsedBefore + elapsedReducer + elapsedListeners + elapsedAfter
-        if (traceActionProfile) println("[Redukt] [$elapsed ms][${sum} ms]" +
+        if (traceActionProfile) println("[Redukt]  Action ${action.name} [$elapsed ms] | [${sum} ms]" +
                 "[$elapsedBefore ms before][$elapsedReducer ms reducer]" +
-                "[$elapsedListeners ms listeners][$elapsedAfter ms after] Action ${action.name}")
+                "[$elapsedListeners ms listeners][$elapsedAfter ms after] | [${listeners.size} listeners")
     }
 
     private fun notifyListeners(it: StateListener<T>, oldState: T) {
